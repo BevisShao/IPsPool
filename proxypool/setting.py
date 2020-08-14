@@ -1,5 +1,6 @@
 # Redis数据库地址
-REDIS_HOST = '127.0.0.1'
+# REDIS_HOST = '127.0.0.1'
+REDIS_HOST = '192.168.0.112'
 
 # Redis端口
 REDIS_PORT = 6379
@@ -30,7 +31,7 @@ TEST_URL = 'https://weibo.com'
 
 
 # API配置
-API_HOST = 'localhost'
+API_HOST = '0.0.0.0'
 API_PORT = 5555
 
 # 开关
