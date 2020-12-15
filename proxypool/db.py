@@ -1,5 +1,5 @@
 import redis
-from proxypool.error import PoolEmptyError, PoolNotMaxScoreError
+from proxypool.error import PoolEmptyError
 from proxypool.setting import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_KEY
 from proxypool.setting import MAX_SCORE, MIN_SCORE, INITIAL_SCORE
 from random import choice
@@ -42,8 +42,7 @@ class RedisClient(object):
         else:
             result = self.db.zrevrange(REDIS_KEY, 0, 100)
             if len(result):
-                # return choice(result)
-                raise PoolNotMaxScoreError
+                return choice(result)
             else:
                 raise PoolEmptyError
     
