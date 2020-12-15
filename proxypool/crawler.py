@@ -1,7 +1,9 @@
 import json
 import re
+from datetime import datetime, date, timedelta
 from .utils import get_page
 from pyquery import PyQuery as pq
+from scrapy import Selector
 
 
 class ProxyMetaclass(type):
@@ -9,6 +11,8 @@ class ProxyMetaclass(type):
         count = 0
         attrs['__CrawlFunc__'] = []
         for k, v in attrs.items():
+            if k.partition('_')[-1] in ['ip3366', 'daili66', 'iphai', 'xicidaili']:
+                continue
             if 'crawl_' in k:
                 attrs['__CrawlFunc__'].append(k)
                 count += 1
@@ -20,13 +24,21 @@ class Crawler(object, metaclass=ProxyMetaclass):
     def get_proxies(self, callback):
         proxies = []
         for proxy in eval("self.{}()".format(callback)):
-            print('成功获取到代理', proxy)
-            proxies.append(proxy)
+            # print(type(proxy))
+            if isinstance(proxy, list):
+                for pro in proxy:
+                    print('成功获取到代理list', pro)
+                    proxies.append(pro)
+            elif isinstance(proxy, str):
+                print('成功获取到代理str', proxy)
+                proxies.append(proxy)
+
         return proxies
        
     def crawl_daili66(self, page_count=4):
         """
         获取代理66
+        此网站已停止维护——20201216
         :param page_count: 页码
         :return: 代理
         """
@@ -68,6 +80,10 @@ class Crawler(object, metaclass=ProxyMetaclass):
                     yield address_port.replace(' ','')
 
     def crawl_xicidaili(self):
+        '''
+        网站已停止维护——20201216
+        :return:
+        '''
         for i in range(1, 3):
             start_url = 'http://www.xicidaili.com/nn/{}'.format(i)
             headers = {
@@ -91,6 +107,10 @@ class Crawler(object, metaclass=ProxyMetaclass):
                         yield address_port.replace(' ','')
     
     def crawl_ip3366(self):
+        '''
+        此网站已经不再维护 ——20201216
+        :return:
+        '''
         for i in range(1, 4):
             start_url = 'http://www.ip3366.net/?stype=1&page={}'.format(i)
             html = get_page(start_url)
@@ -107,6 +127,10 @@ class Crawler(object, metaclass=ProxyMetaclass):
                         yield address_port.replace(' ','')
     
     def crawl_iphai(self):
+        '''
+        网站已停止维护——20201216
+        :return:
+        '''
         start_url = 'http://www.iphai.com/'
         html = get_page(start_url)
         if html:
@@ -122,7 +146,8 @@ class Crawler(object, metaclass=ProxyMetaclass):
                     yield address_port.replace(' ','')
 
     def crawl_data5u(self):
-        start_url = 'http://www.data5u.com/free/gngn/index.shtml'
+        # start_url = 'http://www.data5u.com/free/gngn/index.shtml'
+        start_url = 'http://www.data5u.com/'
         headers = {
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
             'Accept-Encoding': 'gzip, deflate',
@@ -131,17 +156,67 @@ class Crawler(object, metaclass=ProxyMetaclass):
             'Connection': 'keep-alive',
             'Cookie': 'JSESSIONID=47AA0C887112A2D83EE040405F837A86',
             'Host': 'www.data5u.com',
-            'Referer': 'http://www.data5u.com/free/index.shtml',
+            # 'Referer': 'http://www.data5u.com/free/index.shtml',
             'Upgrade-Insecure-Requests': '1',
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36',
         }
         html = get_page(start_url, options=headers)
         if html:
-            ip_address = re.compile('<span><li>(\d+\.\d+\.\d+\.\d+)</li>.*?<li class=\"port.*?>(\d+)</li>', re.S)
-            re_ip_address = ip_address.findall(html)
-            for address, port in re_ip_address:
-                result = address + ':' + port
-                yield result.replace(' ', '')
+            # ip_address = re.compile('<span><li>(\d+\.\d+\.\d+\.\d+)</li>.*?<li class=\"port.*?>(\d+)</li>', re.S)
+            # re_ip_address = ip_address.findall(html)
+            # for address, port in re_ip_address:
+            #     result = address + ':' + port
+            #     yield result.replace(' ', '')
+            select = Selector(text=html)
+            lis = select.xpath('//ul/li//ul[@class="l2"]')
+            if len(lis):
+                # ips = []
+                for li in lis:
+                    host = li.xpath('.//span[1]/li/text()').extract_first()
+                    port = li.xpath('.//span[2]/li/text()').extract_first()
+                    # print(host, ':', port)
+                    yield host + ':' + port
+
+
+    def crawl_data5u_2(self):
+        '''
+        获取‘每日免费代理’通知中心的公告内的代理信息
+        :return:
+        '''
+        headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate',
+            'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive',
+            'Cookie': 'JSESSIONID=47AA0C887112A2D83EE040405F837A86',
+            'Host': 'www.data5u.com',
+            # 'Referer': 'http://www.data5u.com/free/index.shtml',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.108 Safari/537.36',
+        }
+        yesterday = date.today() + timedelta(days=-1)
+        today = date.today()
+        url_x = ['isp', 'http', 'https', 'province']
+        url_base = 'http://www.data5u.com/freeip/{}-{}.html'
+        urls_yesterday = []
+        urls_today = []
+        urls = []
+        for i in url_x:
+            urls_yesterday = url_base.format(yesterday, i)
+            urls_today = url_base.format(today, i)
+            # print(url)
+            urls.extend([urls_yesterday, urls_today])
+        for url in urls:
+            html = get_page(url, options=headers)
+            if html:
+                pattern = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d{1,4}'
+                pattern_com = re.compile(pattern, re.S)
+                ips = re.findall(pattern_com, html)
+                # print(ips)
+                if ips:
+                    yield ips
+
 
 
             

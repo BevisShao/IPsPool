@@ -26,5 +26,8 @@ class Getter():
                 # 获取代理
                 proxies = self.crawler.get_proxies(callback)
                 sys.stdout.flush()
-                for proxy in proxies:
-                    self.redis.add(proxy)
+                try:
+                    for proxy in proxies:
+                        self.redis.add(proxy)
+                except TypeError:
+                    print('请检查部分免费代理网站的响应页面，是否还有代理信息。')
